@@ -1,0 +1,16 @@
+#!/bin/bash
+
+URL=${1/https:\/\//}
+IP=${2}
+
+if [[ -z "${URL}" ]]; then
+    echo "URL required"
+    exit 0
+fi
+
+if [[ -z "${IP}" ]]; then
+    IP=$(dig +short "${URL}" | head -n 1)
+fi
+
+
+curl --insecure -vvi --resolve ${URL}:443:${IP} "https://${URL}" 2>&1 | awk 'BEGIN { cert=0 } /^\* SSL connection/ { cert=1 } /^\*/ { if (cert) print }'

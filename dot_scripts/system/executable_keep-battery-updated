@@ -1,0 +1,27 @@
+#!/bin/bash
+#
+# @version      1.0
+# @script       keep-battery-updated
+# @description  keeps the battery status updated
+#
+##
+
+while sleep 5; do
+    badbattery=$(upower -i /org/freedesktop/UPower/devices/battery_BAT0 | grep state: | cut -d ':' -f 2 | xargs)
+    case $badbattery in
+        discharging)
+            badbattery="Discharging"
+            ;;
+        charging)
+            badbattery="Charging"
+            ;;
+        fully-charged)
+            badbattery="Full"
+            ;;
+    esac
+    goodbattery=$(acpi -V | grep Battery | sed -n 1p | cut -d ':' -f 2 | cut -d ',' -f 1 | xargs)
+
+    if [ $badbattery != $goodbattery ]; then
+        python3 /usr/local/bin/update-battery
+    fi
+done
