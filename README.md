@@ -1,3 +1,3 @@
 # marcusorjames' scripts
 
-Programmers hate doing things twicet
+Programmers hate doing things twice
