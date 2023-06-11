@@ -1,0 +1,10 @@
+#!/bin/bash
+
+name=$1
+
+[ -z $name ] && read -p "What's the name of the app?: " name
+
+[[ ! "$name" =~ ^[a-z-]+$ ]] \
+    && echo "ERROR: Name must only contain alpha charactors and hiphens" && exit 1
+
+curl -s "https://laravel.build/$name" | bash
