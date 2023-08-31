@@ -1,0 +1,7 @@
+#!/bin/bash
+# TODO CHECK THIS! NOT TESTED WITH VARS
+
+INPUT=${1}
+OUTPUT=${2}
+
+awk '(NR == 1) || (FNR > 1)' $INPUT > $OUTPUT
