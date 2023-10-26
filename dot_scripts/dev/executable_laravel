@@ -1,10 +1,71 @@
 #!/bin/bash
+# Some helpful laravel scripts
 
-name=$1
+package="laravel"
+DIR="$(dirname "$(readlink -f "$0")")"
 
-[ -z $name ] && read -p "What's the name of the app?: " name
+exists()
+{
+  command -v "$1" >/dev/null 2>&1
+}
 
-[[ ! "$name" =~ ^[a-z-]+$ ]] \
-    && echo "ERROR: Name must only contain alpha charactors and hiphens" && exit 1
+exists 'colours' && . colours
 
-curl -s "https://laravel.build/$name" | bash
+print_usage()
+{
+  echo "laravel helper"
+  echo " "
+  echo "SYNOPSIS:"
+  echo " "
+  echo "$package COMMAND ..."
+  echo " "
+  echo -e "${Yellow}Commands: "
+  echo -e "  ${Green}create    ${Color_Off}Create site"
+}
+
+print_usage_create()
+{
+  echo -e "${Yellow}Description:${Color_Off}"
+  echo "  Create new laravel site"
+  echo -e "${Yellow}Usage:${Color_Off}"
+  echo "  create [--] [<site_name>]"
+  echo " "
+  echo -e "${Yellow}Arguments: "
+  echo -e "  ${Green}site_name    ${Color_Off}Name of the site you want to" \
+      "create ${Yellow}[OPTIONAL]${Color_Off}"
+}
+
+create()
+{
+    help=false
+
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        -h | --help )    help=true; shift ;;
+        -- ) shift; break ;;
+        * ) break ;;
+      esac
+    done
+
+    $help && print_usage_create && exit 0
+
+    name=$1
+
+    [ -z $name ] && read -p "What's the name of the app?: " name
+
+    [[ ! "$name" =~ ^[a-z-]+$ ]] \
+        && echo "ERROR: Name must only contain alpha charactors and hiphens" && exit 1
+
+    curl -s "https://laravel.build/$name" | bash
+}
+
+[ ! "$#" -gt 0 ] && print_usage && exit 1
+
+function="$1"
+shift
+
+case $function in
+    'create') create "$@" ;;
+    *) print_usage ; exit 1;;
+esac
+
