@@ -1,0 +1,37 @@
+#!/bin/bash
+# Merge csvs together
+
+package="csvmerge"
+
+print_usage() {
+  echo "Merge CSVs together"
+  echo " " echo "SYNOPSIS:"
+  echo " "
+  echo "$package INPUT_PATTERN [OPTION]"
+  echo ""
+  echo "e.g. $package \"*.csv\" -o test.csv"
+  echo "NOTE: Ensure that INPUT_PATTERN is in quotes"
+  echo " "
+  echo "  -o, --out    Out file (default {dmyhis.csv})"
+}
+
+help=false
+input=$1
+
+shift
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h | --help ) help=true; shift ;;
+    -o | --out )  output="$2"; shift ;;
+    -- ) shift; break ;;
+    * ) break; ;;
+  esac
+done
+
+$help && print_usage && exit 0
+
+[ -z "$input" ] && print_usage && exit 0
+[ -z $output ] && output="$(date '+%Y%m%d%H%M%S').csv"
+
+awk '(NR == 1) || (FNR > 1)' $input > $output
