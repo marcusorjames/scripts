@@ -5,7 +5,7 @@ pane="${2:-$TMUX_PANE}"
 tmux has-session -t "$pane" 2>/dev/null || exit 0
 
 tool="$0"
-width="${TMUX_M_COLUMNS:-120}"
+width="${TMUX_M_COLUMNS:-160}"
 step=10
 todo="${TMUX_M_COMMAND:-true}"
 action="$1"
