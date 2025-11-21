@@ -1,0 +1,125 @@
+#!/bin/bash
+
+SSH=/usr/bin/ssh # $(which ssh)
+
+DEFAULT_USER_PORT=$(expr 3337 + $(expr $(id -u) - 1000))
+
+usage() {
+    BASENAME=$(basename ${0})
+    echo
+    echo "Usage:"
+    echo
+    echo "${BASENAME} HOSTNAME (MYSQL_ADDRESS)"
+    grep ".)\ #" "${0}" | sed -e "s/^[[:space:]]*/  -/g" | tr -d ')' | tr '#' '  ' | sed -e "s/DEFAULT_USER_PORT/${DEFAULT_USER_PORT}/g"
+    echo
+    echo "default local port is unique per user"
+    echo
+    echo "Example, mysql on box:"
+    echo "  ${BASENAME} linode.jamgolf"
+    echo
+    echo "Example, RDS:"
+    echo "  ${BASENAME} aws.wp1 long.rds.url.com"
+    echo
+
+    exit 0
+}
+
+quit() {
+    echo
+    echo "Stopping proxy"
+
+    kill $(cat ${PIDFILE}) > /dev/null 2>&1
+    rm -f ${PIDFILE}
+
+    exit 0
+}
+
+autocomplete_script() {
+    BNAME=$(basename ${0})
+
+    DIRNAME=$(dirname ${0})
+    RDSLIST="${0}_RDS"
+
+
+    echo "
+#!/bin/bash
+function _${BNAME}() {
+    if [ \"\${#COMP_WORDS[@]}\" == \"2\" ]; then
+	[[ \$(type -t _ssh) == function ]] || . /usr/share/bash-completion/completions/ssh
+	_ssh
+    fi
+
+    if [ \"\${#COMP_WORDS[@]}\" == \"3\" ]; then
+	LIST=\"$(aws rds describe-db-instances --output text | grep ENDPOINT | cut -f 2)\"
+	COMPREPLY=(\$(compgen -W \"\${LIST}\" \"\${COMP_WORDS[2]}\"))
+    fi
+}
+
+complete -F _${BNAME} ${BNAME}
+" > "/etc/bash_completion.d/${BNAME}"
+
+    exit 0
+}
+
+
+
+PORT=${DEFAULT_USER_PORT}
+REMOTEPORT=3306
+
+while getopts ":p:r:a" o; do
+    case "${o}" in
+	p) # Local port, default DEFAULT_USER_PORT
+	    PORT="${OPTARG}"
+	    ;;
+	r) # Remote port, default 3306
+	    REMOTEPORT="${OPTARG}"
+	    ;;
+	a) # install/update bash autocomplet script, requires sudo and aws cli
+	    autocomplete_script
+	    ;;
+	h) # Display Help
+	    usage
+	    ;;
+    esac
+done
+
+shift $((OPTIND-1))
+
+REMOTEHOST="${1}"
+
+if [[ -z "${REMOTEHOST}" ]]; then
+    usage
+fi
+
+REMOTEDEST="127.0.0.1"
+if [[ ! -z "${2}" ]]; then
+    REMOTEDEST="${2}"
+fi
+
+
+FILENAME=$(basename "$0")
+TMPDIR=$(dirname $(mktemp -u))
+PIDFILE="${TMPDIR}/${FILENAME}-${PORT}.pid"
+
+if [[ -f "${PIDFILE}" ]] && kill -0 $(cat "${PIDFILE}") 2>/dev/null; then
+  PID=$(cat "${PIDFILE}")
+  echo "'${FILENAME}' is already running, use another port or stop it: 'kill ${PID}'" >&2
+  exit 101
+fi
+
+echo "Starting proxy..."
+
+$SSH -N -L 127.0.0.1:${PORT}:${REMOTEDEST}:${REMOTEPORT} ${REMOTEHOST} &
+
+PID=$!
+echo ${PID} > ${PIDFILE}
+
+if [[ "${REMOTEDEST}" == "127.0.0.1" ]]; then
+    echo "Proxying ${REMOTEHOST}:${REMOTEPORT} to 127.0.0.1:${PORT}"
+else
+    echo "Proxying ${REMOTEDEST}:${REMOTEPORT} to 127.0.0.1:${PORT} via ${REMOTEHOST}"
+fi
+echo "press ctrl+c to stop"
+trap quit EXIT
+
+wait ${PID}
