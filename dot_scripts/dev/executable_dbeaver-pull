@@ -1,0 +1,7 @@
+#!/bin/sh
+
+echo "Backing up dbeaver data to ~/.local/share/DBeaverData_bk"
+rm ~/.local/share/DBeaverData_bk -rf
+cp -r ~/.local/share/DBeaverData ~/.local/share/DBeaverData_bk
+echo "Pulling dbeaver data from backup"
+rclone copy marcusorjames_s3:/marcusorjames/backup/DBeaver ~/.local/share/DBeaverData 
