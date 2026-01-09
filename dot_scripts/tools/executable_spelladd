@@ -1,3 +1,4 @@
 #!/bin/sh
-[ -z "$1" ] && echo "Useage: spelladd [word]" && exit;
-echo ${1} >> ~/.aspell.en.pws
+[ -z "$1" ] && echo "Usage: spelladd [word]" && exit 1
+
+printf '*%s\n#\n' "$1" | aspell -a > /dev/null
